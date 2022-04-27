@@ -4,7 +4,7 @@ nvim-cmp source for completing markdown links.
 
 ## Install
 
-cmp-markdown-link requires [plenary.nvim] to be installed.
+cmp-markdown-link requires [plenary.nvim][plenary] to be installed.
 
 Install with favourite package manager.
 
@@ -47,3 +47,6 @@ be done (e.g. linking to headlines, supporting in-line links).
 
 Feel free to create issues and PRs, I will address them/merge them when I have
 time.
+
+
+[plenary]: https://github.com/nvim-lua/plenary.nvim
