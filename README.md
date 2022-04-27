@@ -33,9 +33,9 @@ require'cmp'.setup {
 
 ### Options
 
-- `reference_link_location` `['top' | 'bottom']` - where should the reference
+- `reference_link_location` [`'top'` | `'bottom'`] - where should the reference
   links be placed in the document. The default is `'bottom'`.
-- `searched_depth` `int` - max depth searched for markdown files counting from
+- `searched_depth` [`int`] - max depth searched for markdown files counting from
   the containing folder of currently open markdown file. The default is `5`.
 
 
