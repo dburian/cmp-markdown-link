@@ -4,7 +4,7 @@ nvim-cmp source for completing markdown links.
 
 Note: the source is in alpha stages (read [Contributing](#contributing)).
 
-Right now the source only supports reference style links (described [here](https://daringfireball.net/projects/markdown/syntax#link).
+Right now the source only supports reference style links (described [here](https://daringfireball.net/projects/markdown/syntax#link)).
 
 ## Install
 
