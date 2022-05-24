@@ -2,6 +2,10 @@
 
 nvim-cmp source for completing markdown links.
 
+Note: the source is in alpha stages (read [Contributing](#contributing)).
+
+Right now the source only supports reference style links (described [here](https://daringfireball.net/projects/markdown/syntax#link).
+
 ## Install
 
 cmp-markdown-link requires [plenary.nvim][plenary] to be installed.
@@ -42,10 +46,8 @@ require'cmp'.setup {
 ## Contributing
 
 This package is in a side project, meaning it is not my priority number 1. Also
-right now it does not do much. There are multitude of improvements which could
-be done (e.g. linking to headlines, supporting in-line links).
-
-Feel free to create issues and PRs, I will address them/merge them when I have
+right now it does not do much. There are multitude of improvements which could (and maybe will)
+be done (e.g. linking to headlines, supporting in-line links). Nevertheless if you want a certain functionality to be implemented, feel free to create issues and PRs. I will address/merge them when I have
 time.
 
 
