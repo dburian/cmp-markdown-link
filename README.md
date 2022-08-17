@@ -17,7 +17,7 @@ Plug 'dburian/cmp-markdown-link'
 
 Add to your nvim-cmp sources.
 
-For reference-style links:
+#### For reference-style links:
 
 ```lua
 require'cmp'.setup {
@@ -33,7 +33,8 @@ require'cmp'.setup {
 }
 ```
 
-For inline links:
+#### For inline links:
+
 ```lua
 require'cmp'.setup {
   sources = {
@@ -47,7 +48,7 @@ require'cmp'.setup {
 }
 ```
 
-For wiki-style links:
+#### For wiki-style links:
 
 > Warning: Your links should always start with `wiki_base_url` and end with
 > `wiki_end_url`. Otherwise the link target could become ambiguous. For more
