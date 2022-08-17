@@ -3,7 +3,7 @@ local scandir = require('plenary.scandir')
 local Path = require('plenary.path')
 
 local default_option = {
-  reference_link_location = 'bottom',
+  reference_link_location = 'top',
   searched_depth = 5,
   style = 'reference', -- possible: 'reference', 'wiki', 'inline'
   wiki_base_url = '',
