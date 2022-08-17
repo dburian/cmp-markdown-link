@@ -26,7 +26,7 @@ There are several options that can be passed to cmp-markdown-link:
                    an extension to read this kind of link.
 
         searched_depth: ~
-                Number of subdirectories levels down to be searched from the
+                Number of subdirectory levels down to be searched from the
                 containing folder of the currently opened markdown file. The
                 default is 5.
 
