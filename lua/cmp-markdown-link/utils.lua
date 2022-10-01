@@ -4,18 +4,17 @@ local Path = require('plenary.path')
 local M = {}
 
 
-function M.load_all_targets(opt)
-  local scanned_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h')
-  local paths = scandir.scan_dir(scanned_path, {
+function M.load_all_targets(opts)
+  local paths = scandir.scan_dir(opts.cwd, {
     add_dirs = false,
     hidden = false,
-    depth = opt.searched_depth,
+    depth = opts.searched_depth,
     search_pattern = '.*%.md',
   })
 
   local notes = {}
   for _, path in ipairs(paths) do
-    local rel_path = Path.new(path):make_relative(scanned_path)
+    local rel_path = Path.new(path):make_relative(opts.cwd)
     table.insert(notes, {
       path = path,
       rel_path = rel_path,

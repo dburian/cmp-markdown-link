@@ -1,8 +1,31 @@
 local cmp = require 'cmp'
+local Path = require 'plenary.path'
 local utils = require 'cmp-markdown-link.utils'
 
 
--- Helper functions
+local function create_used_links_entries(opts, linked_notes)
+  local entries = {}
+  for note_rel_path, note_id in pairs(linked_notes) do
+    local full_path = Path.new(opts.cwd, note_rel_path)
+
+    local entry = {
+      label = '[' .. note_id .. ']',
+      filterText = note_id,
+      kind = cmp.lsp.CompletionItemKind.Variable,
+      -- TODO: Only on resolve.
+      documentation = {
+        kind = 'markdown',
+        value = full_path:read()
+      },
+      insertText = note_id .. ']'
+    }
+
+    table.insert(entries, entry)
+  end
+
+
+  return entries
+end
 
 local function create_ref_link_entries(targets, opts, linked_notes)
   local line_count = vim.api.nvim_buf_line_count(0)
@@ -17,6 +40,7 @@ local function create_ref_link_entries(targets, opts, linked_notes)
     local entry = {
       label = note.rel_path,
       kind = cmp.lsp.CompletionItemKind.File,
+      -- TODO: Only on resolve.
       documentation = {
         kind = 'markdown',
         value = note.contents
@@ -60,6 +84,7 @@ local function create_inline_link_entries(targets, _)
     local entry = {
       label = note.rel_path,
       kind = cmp.lsp.CompletionItemKind.File,
+      -- TODO: Only on resolve.
       documentation = {
         kind = 'markdown',
         value = note.contents
@@ -134,6 +159,7 @@ end
 
 function source:complete(params, callback)
   local opts = utils.sanitize_opts(params.option)
+  opts.cwd = opts.cwd or vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h')
 
   -- Only display entries for link targets
   if not utils.is_place_for_link(opts, params.context) then
@@ -141,10 +167,13 @@ function source:complete(params, callback)
   end
 
   local targets = utils.load_all_targets(opts)
+  local linked_notes = utils.get_buf_links()
 
   -- TODO: Add option for luasnip choice node
-  local linked_notes = utils.get_buf_links()
-  local entries = create_entries[opts.style](targets, opts, linked_notes)
+  local entries = create_used_links_entries(opts, linked_notes)
+  for _, entry in ipairs(create_entries[opts.style](targets, opts, linked_notes)) do
+    table.insert(entries, entry)
+  end
 
   callback(entries)
 end
