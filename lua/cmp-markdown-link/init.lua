@@ -3,7 +3,7 @@ local Path = require 'plenary.path'
 local utils = require 'cmp-markdown-link.utils'
 
 
-local function create_used_links_entries(opts, linked_notes)
+local function create_used_ref_links_entries(opts, linked_notes)
   local entries = {}
   for note_rel_path, note_id in pairs(linked_notes) do
     local full_path = Path.new(opts.cwd, note_rel_path)
@@ -168,10 +168,11 @@ function source:complete(params, callback)
 
   local targets = utils.load_all_targets(opts)
   local linked_notes = utils.get_buf_links()
+  local entries = create_used_ref_links_entries(opts, linked_notes)
 
   -- TODO: Add option for luasnip choice node
-  local entries = create_used_links_entries(opts, linked_notes)
-  for _, entry in ipairs(create_entries[opts.style](targets, opts, linked_notes)) do
+  local new_entries = create_entries[opts.style](targets, opts, linked_notes)
+  for _, entry in ipairs(new_entries) do
     table.insert(entries, entry)
   end
 
