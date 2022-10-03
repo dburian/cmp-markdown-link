@@ -170,7 +170,7 @@ function source:complete(params, callback)
   local linked_notes = utils.get_buf_links()
   local entries = create_used_ref_links_entries(opts, linked_notes)
 
-  -- TODO: Add option for luasnip choice node
+  -- TODO: Recognize the style of links used based on context.cursor_before_line
   local new_entries = create_entries[opts.style](targets, opts, linked_notes)
   for _, entry in ipairs(new_entries) do
     table.insert(entries, entry)
