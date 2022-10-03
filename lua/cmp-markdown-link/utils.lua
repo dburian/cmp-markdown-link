@@ -8,7 +8,6 @@ function M.load_all_targets(opts)
     add_dirs = false,
     hidden = false,
     depth = opts.searched_depth,
-    -- TODO: Add option for searching custom dirs
     search_pattern = '.*%.md',
   }
 
