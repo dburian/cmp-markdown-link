@@ -2,10 +2,15 @@ local cmp = require 'cmp'
 local Path = require 'plenary.path'
 local utils = require 'cmp-markdown-link.utils'
 
-local function create_used_ref_links_entries(opts, linked_notes)
+local function get_used_reference_entries(opts, linked_notes)
   local entries = {}
-  for note_rel_path, target_id in pairs(linked_notes) do
-    local full_path = Path.new(opts.cwd, note_rel_path):absolute()
+  for rel_path, target_id in pairs(linked_notes) do
+    local full_path = nil
+    if Path.new(rel_path):is_absolute() then
+      full_path = rel_path
+    else
+      full_path = Path.new(opts.cwd, rel_path):absolute()
+    end
 
     local entry = {
       label = '[' .. target_id .. ']',
@@ -24,7 +29,7 @@ local function create_used_ref_links_entries(opts, linked_notes)
   return entries
 end
 
-local function create_ref_link_entries(targets, opts, linked_notes)
+local function get_reference_entries(targets, opts, linked_notes)
   local line_count = vim.api.nvim_buf_line_count(0)
   local ref_link_loc = opts.reference_link_location == 'top' and 0 or line_count
 
@@ -32,7 +37,7 @@ local function create_ref_link_entries(targets, opts, linked_notes)
   for _, path in ipairs(targets) do
     -- TODO: May not be unique
     local rel_path = utils.make_relative(path, opts.cwd)
-    local target_id = linked_notes[path.rel_path] or utils.get_target_id(path)
+    local target_id = linked_notes[rel_path] or utils.get_target_id(rel_path)
     local link_ref = '[' .. target_id .. ']: ' .. rel_path
 
 
@@ -75,7 +80,7 @@ local function create_ref_link_entries(targets, opts, linked_notes)
   return entries
 end
 
-local function create_inline_link_entries(targets, opts)
+local function get_inline_entries(targets, opts)
   local entries = {}
   for _, path in ipairs(targets) do
     local rel_path = utils.make_relative(path, opts.cwd)
@@ -95,7 +100,7 @@ local function create_inline_link_entries(targets, opts)
   return entries
 end
 
-local function create_wiki_link_entries(targets, opts)
+local function get_wiki_entries(targets, opts)
   local entries = {}
   for _, path in ipairs(targets) do
     local rel_path = utils.make_relative(path, opts.cwd)
@@ -126,12 +131,6 @@ local function create_wiki_link_entries(targets, opts)
   return entries
 end
 
-local create_entries = {
-  reference = create_ref_link_entries,
-  inline = create_inline_link_entries,
-  wiki = create_wiki_link_entries,
-}
-
 -- nvim-cmp source
 local source = {}
 
@@ -158,19 +157,30 @@ function source:complete(params, callback)
   local opts = utils.sanitize_opts(params.option)
   opts.cwd = opts.cwd or vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h')
 
+  P(params)
   -- Only display entries for link targets
-  if not utils.is_place_for_link(opts, params.context) then
+  if not utils.is_place_for_link(params.context) then
     return callback()
   end
 
   local targets = utils.scan_for_targets(opts)
   local linked_notes = utils.get_buf_links()
-  local entries = create_used_ref_links_entries(opts, linked_notes)
+  local entries = get_used_reference_entries(opts, linked_notes)
 
-  -- TODO: Recognize the style of links used based on context.cursor_before_line
-  local new_entries = create_entries[opts.style](targets, opts, linked_notes)
-  for _, entry in ipairs(new_entries) do
-    table.insert(entries, entry)
+  local link_type_entries = nil
+  local cbl = params.context.cursor_before_line
+  if vim.endswith(cbl, '][') then
+    link_type_entries = get_reference_entries(targets, opts, linked_notes)
+  elseif vim.endswith(cbl, '](') then
+    link_type_entries = get_inline_entries(targets, opts)
+  elseif vim.endswith(cbl, '[[') then
+    link_type_entries = get_wiki_entries(targets, opts)
+  end
+
+  if link_type_entries then
+    for _, lt_entry in ipairs(link_type_entries) do
+      table.insert(entries, lt_entry)
+    end
   end
 
   callback(entries)
