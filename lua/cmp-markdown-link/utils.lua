@@ -3,7 +3,7 @@ local Path = require('plenary.path')
 
 local M = {}
 
-function M.load_all_targets(opts)
+function M.scan_for_targets(opts)
   local scan_opts = {
     add_dirs = false,
     hidden = false,
@@ -28,19 +28,7 @@ function M.load_all_targets(opts)
   paths = vim.fn.sort(paths)
   paths = vim.fn.uniq(paths)
 
-  local notes = {}
-  for _, path in ipairs(paths) do
-    -- TODO: It is not relative really...
-    local rel_path = Path.new(path):make_relative(opts.cwd)
-    table.insert(notes, {
-      path = path,
-      rel_path = rel_path,
-      id = vim.fn.fnamemodify(Path.new(rel_path):shorten(), ':r'),
-      contents = Path.new(path):read()
-    })
-  end
-
-  return notes
+  return paths
 end
 
 function M.get_buf_links(buffer)
@@ -78,6 +66,23 @@ function M.sanitize_opts(opts)
   local sanitized = vim.tbl_extend('keep', opts, default_option)
 
   return sanitized
+end
+
+--- Makes path relative to cwd. Useless once issue plenary.nvim/issues/411 is
+--solved.
+function M.make_relative(path, cwd)
+  local relative = Path.new(path):make_relative(cwd)
+  -- TODO: Is not really relative.
+  return relative
+
+  -- if not Path.new(relative).is_absolute() then
+  --   return relative
+  -- end
+
+end
+
+function M.get_target_id(rel_path)
+  return vim.fn.fnamemodify(Path.new(rel_path):shorten(), ':r')
 end
 
 function M.is_place_for_link(opts, context)

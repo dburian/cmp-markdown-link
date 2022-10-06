@@ -2,22 +2,19 @@ local cmp = require 'cmp'
 local Path = require 'plenary.path'
 local utils = require 'cmp-markdown-link.utils'
 
-
 local function create_used_ref_links_entries(opts, linked_notes)
   local entries = {}
-  for note_rel_path, note_id in pairs(linked_notes) do
-    local full_path = Path.new(opts.cwd, note_rel_path)
+  for note_rel_path, target_id in pairs(linked_notes) do
+    local full_path = Path.new(opts.cwd, note_rel_path):absolute()
 
     local entry = {
-      label = '[' .. note_id .. ']',
-      filterText = note_id,
+      label = '[' .. target_id .. ']',
+      filterText = target_id,
       kind = cmp.lsp.CompletionItemKind.Variable,
-      -- TODO: Only on resolve.
-      documentation = {
-        kind = 'markdown',
-        value = full_path:read()
+      data = {
+        path = full_path,
       },
-      insertText = note_id .. ']'
+      insertText = target_id .. ']'
     }
 
     table.insert(entries, entry)
@@ -32,23 +29,24 @@ local function create_ref_link_entries(targets, opts, linked_notes)
   local ref_link_loc = opts.reference_link_location == 'top' and 0 or line_count
 
   local entries = {}
-  for _, note in ipairs(targets) do
-    local link_ref = '[' .. note.id .. ']: ' .. note.rel_path
+  for _, path in ipairs(targets) do
+    -- TODO: May not be unique
+    local rel_path = utils.make_relative(path, opts.cwd)
+    local target_id = linked_notes[path.rel_path] or utils.get_target_id(path)
+    local link_ref = '[' .. target_id .. ']: ' .. rel_path
 
-    note.id = linked_notes[note.rel_path] or note.id
 
     local entry = {
-      label = note.rel_path,
+      label = rel_path,
       kind = cmp.lsp.CompletionItemKind.File,
-      -- TODO: Only on resolve.
-      documentation = {
-        kind = 'markdown',
-        value = note.contents
+      data = {
+        path = path,
       },
-      insertText = note.id .. ']'
+      insertText = target_id .. ']'
     }
 
-    if not linked_notes[note.rel_path] then
+    -- TODO: May be done in custom source:execute
+    if not linked_notes[rel_path] then
       if ref_link_loc == 0 then
         local buf_first_line = vim.api.nvim_buf_get_lines(0, 0, 1, true)[1]
         link_ref = link_ref .. '\n' .. buf_first_line
@@ -77,19 +75,18 @@ local function create_ref_link_entries(targets, opts, linked_notes)
   return entries
 end
 
-local function create_inline_link_entries(targets, _)
+local function create_inline_link_entries(targets, opts)
   local entries = {}
-  for _, note in ipairs(targets) do
+  for _, path in ipairs(targets) do
+    local rel_path = utils.make_relative(path, opts.cwd)
 
     local entry = {
-      label = note.rel_path,
+      label = rel_path,
       kind = cmp.lsp.CompletionItemKind.File,
-      -- TODO: Only on resolve.
-      documentation = {
-        kind = 'markdown',
-        value = note.contents
+      data = {
+        path = path,
       },
-      insertText = note.rel_path .. ')'
+      insertText = rel_path .. ')'
     }
 
     table.insert(entries, entry)
@@ -98,29 +95,29 @@ local function create_inline_link_entries(targets, _)
   return entries
 end
 
-local function create_wiki_link_entries(targets, opts, _)
+local function create_wiki_link_entries(targets, opts)
   local entries = {}
-  for _, note in ipairs(targets) do
-    local link_label = note.rel_path
+  for _, path in ipairs(targets) do
+    local rel_path = utils.make_relative(path, opts.cwd)
+    local anchor = rel_path
 
     if #opts.wiki_base_url > 0 and
-        vim.startswith(link_label, opts.wiki_base_url) then
-      link_label = string.sub(link_label, #opts.wiki_base_url + 1)
+        vim.startswith(anchor, opts.wiki_base_url) then
+      anchor = string.sub(anchor, #opts.wiki_base_url + 1)
     end
 
     if #opts.wiki_end_url > 0 and
-        vim.endswith(link_label, opts.wiki_end_url) then
-      link_label = string.sub(link_label, 0, - #opts.wiki_end_url - 1)
+        vim.endswith(anchor, opts.wiki_end_url) then
+      anchor = string.sub(anchor, 0, - #opts.wiki_end_url - 1)
     end
 
     local entry = {
-      label = note.rel_path,
+      label = rel_path,
       kind = cmp.lsp.CompletionItemKind.File,
-      documentation = {
-        kind = 'markdown',
-        value = note.contents
+      data = {
+        path = path,
       },
-      insertText = link_label .. ']]'
+      insertText = anchor .. ']]'
     }
 
     table.insert(entries, entry)
@@ -146,7 +143,7 @@ end
 
 function source:get_debug_name()
   -- TODO: Add links to headings
-  return 'markdown link to files completion'
+  return 'markdown-link'
 end
 
 function source:is_available()
@@ -166,7 +163,7 @@ function source:complete(params, callback)
     return callback()
   end
 
-  local targets = utils.load_all_targets(opts)
+  local targets = utils.scan_for_targets(opts)
   local linked_notes = utils.get_buf_links()
   local entries = create_used_ref_links_entries(opts, linked_notes)
 
@@ -177,6 +174,17 @@ function source:complete(params, callback)
   end
 
   callback(entries)
+end
+
+function source:resolve(completionItem, callback)
+  if completionItem.data.path then
+    completionItem.documentation = {
+      kind = 'markdown',
+      value = Path.new(completionItem.data.path):read()
+    }
+  end
+
+  callback(completionItem)
 end
 
 return source
