@@ -4,65 +4,52 @@
 cmp-markdown-link is a source for a completion engine nvim-cmp that allows the
 user to autocomplete links to local files in markdown files.
 
+The suggestions will depend on the type of link used. cmp-makrdown-link
+currently supports three types of links: reference, inline and wiki style
+links.
+
 There are several options that can be passed to cmp-markdown-link:
 
-        style: ~
-                The style of links to be used. Possible styles are:
-                - 'reference' (default): >
-                        Text surrounding [link label][link_identifier] a link.
+    searched_dirs: ~
+        Table of directory paths to search for possible link targets (markdown
+        files to link to). The paths are expanded using |expand()|. The
+        default is {'%:h'} (i.e. the containing folder of the currently opened
+        file).
 
-                        [link_identifier]: 'path/to/file.md'
+    searched_depth: ~
+        Maximal number of subdirectory levels to search down from each of the
+        `searched_dirs`. The default is 5.
+
+    reference_link_location: ~
+        Where should be the link reference placed. Possible locations are:
+        - `top` (default) - above the first line of the buffer,
+        - `bottom` - below the last line of the buffer.
+
+    wiki_base_url: ~
+        Prefix that is removed from the linked file's path, if it matches the
+        begining the linked file's relative path. Either you should always use
+        the same prefix for all your links (and set the same prefix in your
+        markdown viewer) or set prefix as "". Default is "".
+        Examples, when 'wiki_base_url' is "notes/": >
+        [[a_note.md]]                                link to "notes/a_note.md"
+        [[scratch/tmp_note.md]]                  link to "scratch/tmp_note.md"
 <
-                   The link identifier is inferred automatically based on
-                   the linked filename.
-
-                - 'inline': >
-                        Text surrounding [link label](path/to/file.md) a link.
-<
-                - 'wiki': >
-                        Text surrounding [[path/to/file]] a link.
-<
-                   Warning: This is not a standard markdown syntax. You need
-                   an extension to read this kind of link.
-
-        searched_depth: ~
-                Number of subdirectory levels down to be searched from the
-                containing folder of the currently opened markdown file. The
-                default is 5.
-
-        reference_link_location: ~
-                Where should be the link reference placed. Possible locations
-                are:
-                - 'top' (default) - above the first line of the buffer,
-                - 'bottom' - below the last line of the buffer.
-
-        wiki_base_url: ~
-                Prefix that is removed from the linked file's path, if it
-                matches the begining the linked file's relative path. Either
-                you should always use the same prefix for all your links (and
-                set the same prefix in your markdown viewer) or set prefix as
-                "". Default is "".
-                Examples, when 'wiki_base_url' is "notes/": >
-                [[a_note.md]]                        link to "notes/a_note.md"
-                [[scratch/tmp_note.md]]          link to "scratch/tmp_note.md"
-<
-        wiki_end_url: ~
-                Suffix that is removed from the linked file's path, if it
-                matches the end of linked file's path. Either you should
-                always use the same suffix for all your links (and set the
-                same suffix in your markdown viewer) or set suffix as "".
-                Default is "".
-                Examples, when 'wiki_end_url' is ".md": >
-                [[notes/a_note]]                     link to "notes/a_note.md"
-                [[texts/a_poem.txt]]                link to "texts/a_poem.txt"
+    wiki_end_url: ~
+        Suffix that is removed from the linked file's path, if it matches the
+        end of linked file's path. Either you should always use the same
+        suffix for all your links (and set the same suffix in your markdown
+        viewer) or set suffix as "". Default is "".
+        Examples, when 'wiki_end_url' is ".md": >
+        [[notes/a_note]]                             link to "notes/a_note.md"
+        [[texts/a_poem.txt]]                        link to "texts/a_poem.txt"
 <
 
-                Examples, when 'wiki_base_url' is "notes/" and 'wiki_end_url'
-                is ".md": >
-                [[a_note]]                           link to "notes/a_note.md"
-                [[scratch/tmp_note]]             link to "scratch/tmp_note.md"
-                [[a_scribble.txt]]              link to "notes/a_scribble.txt"
-                [[texts/a_poem.txt]]                link to "texts/a_poem.txt"
+        Examples, when 'wiki_base_url' is "notes/" and 'wiki_end_url' is
+        ".md": >
+        [[a_note]]                                   link to "notes/a_note.md"
+        [[scratch/tmp_note]]                     link to "scratch/tmp_note.md"
+        [[a_scribble.txt]]                      link to "notes/a_scribble.txt"
+        [[texts/a_poem.txt]]                        link to "texts/a_poem.txt"
 <
 
- vim:tw=78:ts=8:ft=help:norl:
+ vim:tw=78:ts=4:ft=help:norl:

@@ -11,9 +11,7 @@ function M.scan_for_targets(opts)
     search_pattern = '.*%.md',
   }
 
-  local scan_dirs = opts.searched_dirs or {}
-  table.insert(scan_dirs, opts.cwd)
-  scan_dirs = vim.tbl_map(vim.fn.expand, scan_dirs)
+  local scan_dirs = vim.tbl_map(vim.fn.expand, opts.searched_dirs)
   scan_dirs = vim.fn.sort(scan_dirs)
   scan_dirs = vim.fn.uniq(scan_dirs)
 
@@ -50,19 +48,13 @@ end
 
 local default_option = {
   reference_link_location = 'top',
+  searched_dirs = { '%:h' },
   searched_depth = 5,
-  style = 'reference', -- possible: 'reference', 'wiki', 'inline'
   wiki_base_url = '',
   wiki_end_url = '',
 }
 
 function M.sanitize_opts(opts)
-  if opts.style ~= 'reference' and
-      opts.style ~= 'wiki' and
-      opts.style ~= 'inline' then
-    opts.style = nil
-  end
-
   local sanitized = vim.tbl_extend('keep', opts, default_option)
 
   return sanitized
@@ -85,15 +77,11 @@ function M.get_target_id(rel_path)
   return vim.fn.fnamemodify(Path.new(rel_path):shorten(), ':r')
 end
 
-function M.is_place_for_link(opts, context)
-  local ending = ']['
-  if opts.style == 'inline' then
-    ending = ']('
-  elseif opts.style == 'wiki' then
-    ending = '[['
-  end
-
-  return vim.endswith(context.cursor_before_line, ending)
+function M.is_place_for_link(context)
+  local cbl = context.cursor_before_line
+  return #cbl >= 2 and (vim.endswith(cbl, '][') or
+      vim.endswith(cbl, '](') or
+      vim.endswith(cbl, '[['))
 end
 
 return M
