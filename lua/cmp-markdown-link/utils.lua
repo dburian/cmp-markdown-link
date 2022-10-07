@@ -61,16 +61,34 @@ function M.sanitize_opts(opts)
 end
 
 --- Makes path relative to cwd. Useless once issue plenary.nvim/issues/411 is
---solved.
+--solved. Both `path` and `cwd` should be absolute paths.
 function M.make_relative(path, cwd)
   local relative = Path.new(path):make_relative(cwd)
   -- TODO: Is not really relative.
-  return relative
+  if not Path.new(relative):is_absolute() then
+    return relative
+  end
 
-  -- if not Path.new(relative).is_absolute() then
-  --   return relative
-  -- end
+  local path_pieces = vim.fn.split(path, Path.path.sep)
+  local cwd_pieces = vim.fn.split(cwd, Path.path.sep)
 
+  local first_diff = 1
+  local max_ind = math.min(#path_pieces, #cwd_pieces)
+  while first_diff <= max_ind and path_pieces[first_diff] == cwd_pieces[first_diff] do
+    first_diff = first_diff + 1
+  end
+
+  local rel_path = ''
+  for _ = first_diff, #cwd_pieces do
+    rel_path = rel_path .. '..' .. Path.path.sep
+  end
+
+  for i = first_diff, #path_pieces do
+    rel_path = rel_path .. path_pieces[i] .. Path.path.sep
+  end
+
+  -- Getting rid of last Path.path.sep
+  return string.sub(rel_path, 1, -2)
 end
 
 function M.get_target_id(rel_path)
