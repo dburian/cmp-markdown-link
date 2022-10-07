@@ -37,7 +37,7 @@ local function get_reference_entries(targets, opts, linked_notes)
   for _, path in ipairs(targets) do
     -- TODO: May not be unique
     local rel_path = utils.make_relative(path, opts.cwd)
-    local target_id = linked_notes[path.rel_path] or utils.get_target_id(path)
+    local target_id = linked_notes[rel_path] or utils.get_target_id(rel_path)
     local link_ref = '[' .. target_id .. ']: ' .. rel_path
 
 
