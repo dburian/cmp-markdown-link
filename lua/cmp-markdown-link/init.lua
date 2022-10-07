@@ -2,33 +2,6 @@ local cmp = require 'cmp'
 local Path = require 'plenary.path'
 local utils = require 'cmp-markdown-link.utils'
 
-local function get_used_reference_entries(opts, linked_notes)
-  local entries = {}
-  for rel_path, target_id in pairs(linked_notes) do
-    local full_path = nil
-    if Path.new(rel_path):is_absolute() then
-      full_path = rel_path
-    else
-      full_path = Path.new(opts.cwd, rel_path):absolute()
-    end
-
-    local entry = {
-      label = '[' .. target_id .. ']',
-      filterText = target_id,
-      kind = cmp.lsp.CompletionItemKind.Variable,
-      data = {
-        path = full_path,
-      },
-      insertText = target_id .. ']'
-    }
-
-    table.insert(entries, entry)
-  end
-
-
-  return entries
-end
-
 local function get_reference_entries(targets, opts, linked_notes)
   local line_count = vim.api.nvim_buf_line_count(0)
   local ref_link_loc = opts.reference_link_location == 'top' and 0 or line_count
@@ -37,21 +10,27 @@ local function get_reference_entries(targets, opts, linked_notes)
   for _, path in ipairs(targets) do
     -- TODO: May not be unique
     local rel_path = utils.make_relative(path, opts.cwd)
-    local target_id = linked_notes[rel_path] or utils.get_target_id(rel_path)
-    local link_ref = '[' .. target_id .. ']: ' .. rel_path
-
-
     local entry = {
-      label = rel_path,
-      kind = cmp.lsp.CompletionItemKind.File,
       data = {
         path = path,
-      },
-      insertText = target_id .. ']'
+      }
     }
 
-    -- TODO: May be done in custom source:execute
-    if not linked_notes[rel_path] then
+    if linked_notes[rel_path] ~= nil then
+      local used_id = linked_notes[rel_path]
+      entry.label = '[' .. used_id .. ']'
+      entry.filterText = used_id
+      entry.kind = cmp.lsp.CompletionItemKind.Variable
+      entry.insertText = used_id .. ']'
+    else
+      local target_id = utils.get_target_id(rel_path)
+      entry.label = rel_path
+      entry.kind = cmp.lsp.CompletionItemKind.File
+      entry.insertText = target_id .. ']'
+
+      local link_ref = '[' .. target_id .. ']: ' .. rel_path
+
+      -- TODO: May be done in custom source:execute
       if ref_link_loc == 0 then
         local buf_first_line = vim.api.nvim_buf_get_lines(0, 0, 1, true)[1]
         link_ref = link_ref .. '\n' .. buf_first_line
@@ -165,22 +144,15 @@ function source:complete(params, callback)
 
   local targets = utils.scan_for_targets(opts)
   local linked_notes = utils.get_buf_links()
-  local entries = get_used_reference_entries(opts, linked_notes)
 
-  local link_type_entries = nil
+  local entries = nil
   local cbl = params.context.cursor_before_line
   if vim.endswith(cbl, '][') then
-    link_type_entries = get_reference_entries(targets, opts, linked_notes)
+    entries = get_reference_entries(targets, opts, linked_notes)
   elseif vim.endswith(cbl, '](') then
-    link_type_entries = get_inline_entries(targets, opts)
+    entries = get_inline_entries(targets, opts)
   elseif vim.endswith(cbl, '[[') then
-    link_type_entries = get_wiki_entries(targets, opts)
-  end
-
-  if link_type_entries then
-    for _, lt_entry in ipairs(link_type_entries) do
-      table.insert(entries, lt_entry)
-    end
+    entries = get_wiki_entries(targets, opts)
   end
 
   callback(entries)
