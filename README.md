@@ -26,6 +26,10 @@ require'cmp'.setup {
       option = {
         reference_link_location = 'top',
         searched_depth = 3,
+        searched_dirs = {
+          '%:h', --always search the current dir
+          '~/docs/wiki', --custom path to search as well
+        },
         wiki_base_url = '',
         wiki_end_url = '.md',
       }
