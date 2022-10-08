@@ -2,13 +2,12 @@ local cmp = require 'cmp'
 local Path = require 'plenary.path'
 local utils = require 'cmp-markdown-link.utils'
 
-local function get_reference_entries(targets, opts, linked_notes)
+local function get_reference_entries(targets, opts, linked_notes, used_target_ids)
   local line_count = vim.api.nvim_buf_line_count(0)
   local ref_link_loc = opts.reference_link_location == 'top' and 0 or line_count
 
   local entries = {}
   for _, path in ipairs(targets) do
-    -- TODO: May not be unique
     local rel_path = utils.make_relative(path, opts.cwd)
     local entry = {
       data = {
@@ -23,7 +22,8 @@ local function get_reference_entries(targets, opts, linked_notes)
       entry.kind = cmp.lsp.CompletionItemKind.Variable
       entry.insertText = used_id .. ']'
     else
-      local target_id = utils.get_target_id(rel_path)
+      -- TODO: May not be unique
+      local target_id = utils.get_unique_target_id(rel_path, used_target_ids)
       entry.label = rel_path
       entry.kind = cmp.lsp.CompletionItemKind.File
       entry.insertText = target_id .. ']'
@@ -120,7 +120,6 @@ function source.new()
 end
 
 function source:get_debug_name()
-  -- TODO: Add links to headings
   return 'markdown-link'
 end
 
@@ -136,19 +135,18 @@ function source:complete(params, callback)
   local opts = utils.sanitize_opts(params.option)
   opts.cwd = opts.cwd or vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h')
 
-  P(params)
   -- Only display entries for link targets
   if not utils.is_place_for_link(params.context) then
     return callback()
   end
 
   local targets = utils.scan_for_targets(opts)
-  local linked_notes = utils.get_buf_links()
+  local linked_notes, used_target_ids = utils.get_buf_links()
 
   local entries = nil
   local cbl = params.context.cursor_before_line
   if vim.endswith(cbl, '][') then
-    entries = get_reference_entries(targets, opts, linked_notes)
+    entries = get_reference_entries(targets, opts, linked_notes, used_target_ids)
   elseif vim.endswith(cbl, '](') then
     entries = get_inline_entries(targets, opts)
   elseif vim.endswith(cbl, '[[') then

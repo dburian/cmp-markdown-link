@@ -35,15 +35,17 @@ function M.get_buf_links(buffer)
   end
 
   local buf_lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
-  local lines = {}
+  local linked_notes = {}
+  local used_target_ids = {}
   for _, line in ipairs(buf_lines) do
-    local note_id, note_rel_path = string.match(line, '%[([^]]*)%]:%s*(.*%.md)$')
-    if note_id and note_rel_path then
-      lines[note_rel_path] = note_id
+    local target_id, rel_path = string.match(line, '%[([^]]*)%]:%s*(.*%.md)$')
+    if target_id and rel_path then
+      linked_notes[rel_path] = target_id
+      used_target_ids[target_id] = rel_path
     end
   end
 
-  return lines
+  return linked_notes, used_target_ids
 end
 
 local default_option = {
@@ -64,7 +66,6 @@ end
 --solved. Both `path` and `cwd` should be absolute paths.
 function M.make_relative(path, cwd)
   local relative = Path.new(path):make_relative(cwd)
-  -- TODO: Is not really relative.
   if not Path.new(relative):is_absolute() then
     return relative
   end
@@ -91,8 +92,40 @@ function M.make_relative(path, cwd)
   return string.sub(rel_path, 1, -2)
 end
 
-function M.get_target_id(rel_path)
-  return vim.fn.fnamemodify(Path.new(rel_path):shorten(), ':r')
+function M.get_unique_target_id(rel_path, used_tids)
+  local len = 1
+  local function _get_tid(_len)
+    _len = _len or len
+    return vim.fn.fnamemodify(Path.new(rel_path):shorten(_len), ':r')
+  end
+
+  local last_tid = nil
+  local tid = _get_tid()
+
+  -- Increasing length of rel_path's parts does not guarantee uniqueness.
+  while last_tid ~= tid and used_tids[tid] ~= nil do
+    len = len + 1
+    last_tid = tid
+    tid = _get_tid()
+    if len > 10 then
+      break
+    end
+  end
+
+  if used_tids[tid] == nil then
+    return tid
+  end
+
+  -- If last_tid == tid we need other ways how to make the target_id unique.
+  local counter = 0
+  local no_cnt_tid = _get_tid(1)
+  tid = no_cnt_tid .. '_' .. tostring(counter)
+  while used_tids[tid] ~= nil do
+    counter = counter + 1
+    tid = no_cnt_tid .. '_' .. tostring(counter)
+  end
+
+  return tid
 end
 
 function M.is_place_for_link(context)
