@@ -57,7 +57,7 @@ function M.get_buf_links(buffer)
   local linked_notes = {}
   local used_target_ids = {}
   for _, line in ipairs(buf_lines) do
-    local target_id, rel_path = string.match(line, '%[([^]]*)%]:%s*(.*)$')
+    local target_id, rel_path = string.match(line, '%[([^]]*)%]:%s*(.+)$')
     if target_id and rel_path then
       linked_notes[rel_path] = target_id
       used_target_ids[target_id] = rel_path
