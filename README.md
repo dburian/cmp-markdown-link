@@ -1,7 +1,6 @@
 # cmp-markdown-link
 
-nvim-cmp source for completing markdown links (right now only to markdown
-files).
+nvim-cmp source for completing markdown links.
 
 ## Install
 
@@ -18,7 +17,20 @@ Plug 'dburian/cmp-markdown-link'
 
 Add `markdown-link` to your nvim-cmp sources.
 
+Minimal setup:
 ```lua
+require'cmp'.setup {
+  sources = {
+    { name = 'markdown-link' },
+}
+```
+
+More involved setup:
+```lua
+local function png_or_markdown_files(path)
+    return string.match(path, '.*%.png') or string.match(path, '.*%.md')
+end
+
 require'cmp'.setup {
   sources = {
     {
@@ -30,6 +42,8 @@ require'cmp'.setup {
           '%:h', --always search the current dir
           '~/docs/wiki', --custom path to search as well
         },
+        --only offer links to .png or .md files
+        search_pattern = png_or_markdown_files,
         wiki_base_url = '',
         wiki_end_url = '.md',
       }

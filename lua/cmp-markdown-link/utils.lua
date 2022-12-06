@@ -8,25 +8,44 @@ function M.scan_for_targets(opts)
     add_dirs = false,
     hidden = false,
     depth = opts.searched_depth,
-    search_pattern = '.*%.md',
   }
 
-  local scan_dirs = vim.tbl_map(vim.fn.expand, opts.searched_dirs)
+  if opts.search_pattern then
+    scan_opts.search_pattern = opts.search_pattern
+  end
+
+  local function expand_to_full_path(path)
+    local expanded = vim.fn.expand(path)
+    if Path.new(expanded):is_absolute() then
+      return expanded
+    end
+
+    return Path.new(opts.cwd, expanded):absolute()
+  end
+
+  local scan_dirs = vim.tbl_map(expand_to_full_path, opts.searched_dirs)
   scan_dirs = vim.fn.sort(scan_dirs)
   scan_dirs = vim.fn.uniq(scan_dirs)
 
-  local paths = {}
+  local found_targets = {}
   for _, dir in ipairs(scan_dirs) do
-    table.insert(paths, scandir.scan_dir(dir, scan_opts))
+    for _, scaned_path in ipairs(scandir.scan_dir(dir, scan_opts)) do
+      local absolute_path = scaned_path
+      if not Path.new(scaned_path):is_absolute() then
+        absolute_path = Path.new(dir, scaned_path):absolute()
+      end
+      table.insert(found_targets, absolute_path)
+    end
+    table.insert(found_targets, scandir.scan_dir(dir, scan_opts))
   end
 
-  paths = vim.tbl_flatten(paths)
+  found_targets = vim.tbl_flatten(found_targets)
   -- In case some scan_dir was parent of another one and searched_depth was
   -- large enough.
-  paths = vim.fn.sort(paths)
-  paths = vim.fn.uniq(paths)
+  found_targets = vim.fn.sort(found_targets)
+  found_targets = vim.fn.uniq(found_targets)
 
-  return paths
+  return found_targets
 end
 
 function M.get_buf_links(buffer)
@@ -38,7 +57,7 @@ function M.get_buf_links(buffer)
   local linked_notes = {}
   local used_target_ids = {}
   for _, line in ipairs(buf_lines) do
-    local target_id, rel_path = string.match(line, '%[([^]]*)%]:%s*(.*%.md)$')
+    local target_id, rel_path = string.match(line, '%[([^]]*)%]:%s*(.*)$')
     if target_id and rel_path then
       linked_notes[rel_path] = target_id
       used_target_ids[target_id] = rel_path

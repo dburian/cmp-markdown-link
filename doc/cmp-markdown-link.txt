@@ -20,6 +20,15 @@ There are several options that can be passed to cmp-markdown-link:
         Maximal number of subdirectory levels to search down from each of the
         `searched_dirs`. The default is 5.
 
+    search_pattern: ~
+        Lua's match pattern (see Lua's patterns for 'string.match') or
+        callback, which should match or return true for valid link targets.
+        Default is 'nil' (all found files are valid link targets).
+        Examples: >
+        ".*%.png"                                               only .png files
+        "/home/user/notes/.*"            only files under the 'notes' directory
+<
+
     reference_link_location: ~
         Where should be the link reference placed. Possible locations are:
         - `top` (default) - above the first line of the buffer,

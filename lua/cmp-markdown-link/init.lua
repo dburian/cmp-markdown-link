@@ -7,29 +7,37 @@ local function get_reference_entries(targets, opts, linked_notes, used_target_id
   local ref_link_loc = opts.reference_link_location == 'top' and 0 or line_count
 
   local entries = {}
-  for _, path in ipairs(targets) do
-    local rel_path = utils.make_relative(path, opts.cwd)
+
+  for id, path in pairs(linked_notes) do
     local entry = {
+      label = '[' .. id .. ']',
+      filterText = id,
+      kind = cmp.lsp.CompletionItemKind.Variable,
+      insertText = id .. ']',
       data = {
-        path = path,
+        path,
       }
     }
 
-    if linked_notes[rel_path] ~= nil then
-      local used_id = linked_notes[rel_path]
-      entry.label = '[' .. used_id .. ']'
-      entry.filterText = used_id
-      entry.kind = cmp.lsp.CompletionItemKind.Variable
-      entry.insertText = used_id .. ']'
-    else
-      -- TODO: May not be unique
+    table.insert(entries, entry)
+  end
+
+  for _, path in ipairs(targets) do
+    local rel_path = utils.make_relative(path, opts.cwd)
+    -- Entries from linked_notes have laready been created
+    if linked_notes[rel_path] == nil then
       local target_id = utils.get_unique_target_id(rel_path, used_target_ids)
-      entry.label = rel_path
-      entry.kind = cmp.lsp.CompletionItemKind.File
-      entry.insertText = target_id .. ']'
+
+      local entry = {
+        label = rel_path,
+        kind = cmp.lsp.CompletionItemKind.File,
+        insertText = target_id .. ']',
+        data = {
+          path = path,
+        }
+      }
 
       local link_ref = '[' .. target_id .. ']: ' .. rel_path
-
       -- TODO: May be done in custom source:execute
       if ref_link_loc == 0 then
         local buf_first_line = vim.api.nvim_buf_get_lines(0, 0, 1, true)[1]
@@ -51,9 +59,9 @@ local function get_reference_entries(targets, opts, linked_notes, used_target_id
           }
         },
       }
-    end
 
-    table.insert(entries, entry)
+      table.insert(entries, entry)
+    end
   end
 
   return entries
@@ -133,7 +141,8 @@ end
 
 function source:complete(params, callback)
   local opts = utils.sanitize_opts(params.option)
-  opts.cwd = opts.cwd or vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h')
+  opts.cwd = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h')
+  print("CWD: " .. opts.cwd)
 
   -- Only display entries for link targets
   if not utils.is_place_for_link(params.context) then
@@ -158,10 +167,13 @@ end
 
 function source:resolve(completionItem, callback)
   if completionItem.data.path then
-    completionItem.documentation = {
-      kind = 'markdown',
-      value = Path.new(completionItem.data.path):read()
-    }
+    local path = Path.new(completionItem.data.path)
+    if path:is_file() and vim.endswith(path.filename, '.md') then
+      completionItem.documentation = {
+        kind = 'markdown',
+        value = path:read()
+      }
+    end
   end
 
   callback(completionItem)
